@@ -613,81 +613,69 @@ class Resize:
             raise ValueError("Invalid filter half-length (should be [2..4])")
         
 
-def resize_image(input_img, output_size=None, zoom_factors=None, method='Least-Squares', degree='Linear'):
-    """
-    Resize an image using Least-Squares or Oblique interpolation.
-
-    Parameters:
-    - input_img: numpy.ndarray
-        The input image to resize.
-    - output_size: tuple of int (output_height, output_width), optional
-        The desired output size. If provided, zoom_factors are ignored.
-    - zoom_factors: tuple of float (zoom_y, zoom_x), optional
-        The zoom factors for the y and x dimensions.
-    - method: str, optional
-        The interpolation method to use. Options are 'Least-Squares' or 'Oblique'.
-    - degree: str, optional
-        The degree of the interpolation. Options are 'Linear' or 'Cubic'.
-
-    Returns:
-    - output_img: numpy.ndarray
-        The resized image.
-    """
+def resize_image(input_img_normalized, output_size=None, zoom_factors=None, method='Least-Squares', interpolation='Linear', inversable=False):
     # Determine the zoom factors
     if output_size is not None:
-        zoom_y = output_size[0] / input_img.shape[0]
-        zoom_x = output_size[1] / input_img.shape[1]
+        zoom_y = output_size[0] / input_img_normalized.shape[0]
+        zoom_x = output_size[1] / input_img_normalized.shape[1]
     elif zoom_factors is not None:
         zoom_y, zoom_x = zoom_factors
     else:
         raise ValueError("Either output_size or zoom_factors must be provided.")
 
-    # Map the method to analy_degree and synthe_degree
-    if method == 'Least-Squares':
-        analy_degree = -1
-    elif method == 'Oblique':
-        if degree == 'Linear':
-            analy_degree = 1
-        elif degree == 'Cubic':
-            analy_degree = 3
-        else:
-            raise ValueError("Invalid degree for Oblique method. Choose 'Linear' or 'Cubic'.")
-    else:
-        raise ValueError("Invalid method. Choose 'Least-Squares' or 'Oblique'.")
+    ##########################################
 
-    # Map degree to interp_degree and synthe_degree
-    if degree == 'Linear':
+    # Set degrees based on interpolation method
+    if interpolation == "Linear":
         interp_degree = 1
         synthe_degree = 1
-    elif degree == 'Cubic':
+        analy_degree = 1
+    elif interpolation == "Quadratic":
+        interp_degree = 2
+        synthe_degree = 2
+        analy_degree = 2
+    else:  # Cubic
         interp_degree = 3
         synthe_degree = 3
-    else:
-        raise ValueError("Invalid degree. Choose 'Linear' or 'Cubic'.")
+        analy_degree = 3
 
-    # Shifts (can be adjusted if needed)
-    shift_y = 0.0
-    shift_x = 0.0
+    # Interpolation method must fulfill requirement: analy_degree = -1
+    # Least-Squares method must fulfill requirement: analy_degree = interp_degree
+    # Oblique projection method must fulfill requirement: -1 < analy_degree < interp_degree
 
-    # Create the output image array
-    output_shape = (int(round(input_img.shape[0] * zoom_y)), int(round(input_img.shape[1] * zoom_x)))
-    output_img = np.zeros(output_shape, dtype=input_img.dtype)
+    if method == "Interpolation":
+        analy_degree = -1
+    elif method == "Oblique projection":
+        if interpolation == "Linear":
+            analy_degree = 0
+        elif interpolation == "Quadratic":
+            analy_degree = 1
+        else:  # Cubic
+            analy_degree = 2
 
-    # Create an instance of the Resize class
+    # Define the output image size
+    output_height = int(np.round(input_img_normalized.shape[0] * zoom_y))
+    output_width = int(np.round(input_img_normalized.shape[1] * zoom_x))
+    output_image = np.zeros((output_height, output_width), dtype=np.float64)
+
+    # Create instance of Resize class
     resizer = Resize()
+
+    # Perform resizing with a copy of the input image
+    input_image_copy = input_img_normalized.copy()
 
     # Perform the resizing operation
     resizer.compute_zoom(
-        input_img,
-        output_img,
+        input_image_copy,
+        output_image,
         analy_degree,
         synthe_degree,
         interp_degree,
         zoom_y,
         zoom_x,
-        shift_y,
-        shift_x,
-        inversable=False
+        shift_y=0,
+        shift_x=0,
+        inversable=inversable
     )
 
-    return output_img
+    return output_image
