@@ -1,45 +1,6 @@
 import numpy as np
 
 class Resize:
-    """
-    A class to perform image resizing using various interpolation methods.
-
-    Attributes
-    ----------
-    interp_degree : int
-        Degree of the interpolation.
-    analy_degree : int
-        Degree of the analysis.
-    synthe_degree : int
-        Degree of the synthesis.
-    zoom_y : float
-        Vertical zoom factor.
-    zoom_x : float
-        Horizontal zoom factor.
-    inversable : bool
-        Indicates if the transformation is inversable.
-    analy_even : int
-        Indicates if the analysis degree is even.
-    corr_degree : int
-        Degree of the correlation.
-    half_support : float
-        Half support size for the spline interpolation.
-    spline_array_height : np.ndarray
-        Array of spline coefficients for height.
-    spline_array_width : np.ndarray
-        Array of spline coefficients for width.
-    index_min_height : np.ndarray
-        Minimum index for height.
-    index_max_height : np.ndarray
-        Maximum index for height.
-    index_min_width : np.ndarray
-        Minimum index for width.
-    index_max_width : np.ndarray
-        Maximum index for width.
-    tolerance : float
-        Tolerance for numerical calculations.
-    """
-
     def __init__(self):
         """Initialize the Resize class with default values."""
         self.interp_degree = None
@@ -180,24 +141,6 @@ class Resize:
 
 
     def resampling_row(self, input_vector, output_vector, add_vector, add_output_vector, max_sym_boundary, max_asym_boundary):
-        """
-        Perform resampling of a row vector.
-
-        Parameters
-        ----------
-        input_vector : np.ndarray
-            The input row vector.
-        output_vector : np.ndarray
-            The output row vector.
-        add_vector : np.ndarray
-            Auxiliary vector for processing.
-        add_output_vector : np.ndarray
-            Auxiliary output vector for processing.
-        max_sym_boundary : int
-            Maximum symmetric boundary.
-        max_asym_boundary : int
-            Maximum asymmetric boundary.
-        """
         length_input = len(input_vector)
         length_output = len(output_vector)
         length_total = len(add_vector)
@@ -256,24 +199,6 @@ class Resize:
         output_vector[:length_output] = add_output_vector[:length_output]
 
     def resampling_column(self, input_vector, output_vector, add_vector, add_output_vector, max_sym_boundary, max_asym_boundary):
-        """
-        Perform resampling of a column vector.
-
-        Parameters
-        ----------
-        input_vector : np.ndarray
-            The input column vector.
-        output_vector : np.ndarray
-            The output column vector.
-        add_vector : np.ndarray
-            Auxiliary vector for processing.
-        add_output_vector : np.ndarray
-            Auxiliary output vector for processing.
-        max_sym_boundary : int
-            Maximum symmetric boundary.
-        max_asym_boundary : int
-            Maximum asymmetric boundary.
-        """
         length_input = len(input_vector)
         length_output = len(output_vector)
         length_total = len(add_vector)
@@ -406,21 +331,6 @@ class Resize:
 
 
     def do_integ(self, c, nb):
-        """
-        Perform integration on a vector.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        nb : int
-            Number of integration steps.
-
-        Returns
-        -------
-        average : float
-            The average value after integration.
-        """
         size = len(c)
         m = 0.0
         average = 0.0
@@ -458,47 +368,17 @@ class Resize:
         return average
 
     def integ_sa(self, c, m):
-        """
-        Perform semi-analytical integration.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        m : float
-            The average value.
-        """
         c -= m
         c[0] *= 0.5
         c[1:] += np.cumsum(c[:-1])
 
     def integ_as(self, c, y):
-        """
-        Perform analytical integration.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        y : np.ndarray
-            The output vector after integration.
-        """
         z = c.copy()
         y[0] = z[0]
         y[1] = 0
         y[2:] = -np.cumsum(z[1:-1])
 
     def do_diff(self, c, nb):
-        """
-        Perform differentiation on a vector.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        nb : int
-            Number of differentiation steps.
-        """
         size = len(c)
         if nb == 1:
             self.diff_as(c)
@@ -516,47 +396,16 @@ class Resize:
             self.diff_as(c)
 
     def diff_sa(self, c):
-        """
-        Perform semi-analytical differentiation.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        """
         old = c[-2]
         c[:-1] -= c[1:]  # Perform the element-wise subtraction
         c[-1] -= old     # Update the last element
 
     def diff_as(self, c):
-        """
-        Perform analytical differentiation.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        """
         c[1:] -= c[:-1]  # Perform the element-wise subtraction for differentiation
         c[0] *= 2.0      # Update the first element
 
     @staticmethod
     def border(size, degree):
-        """
-        Calculate the border size for a given degree.
-
-        Parameters
-        ----------
-        size : int
-            The size of the dimension.
-        degree : int
-            The degree of the spline.
-
-        Returns
-        -------
-        horizon : int
-            The calculated border size.
-        """
         if degree in [0, 1]:
             return 0
 
@@ -582,27 +431,6 @@ class Resize:
 
     @staticmethod
     def calculate_final_size(inversable, height, width, zoom_y, zoom_x):
-        """
-        Calculate the final size of the image after zooming.
-
-        Parameters
-        ----------
-        inversable : bool
-            Indicates if the transformation is inversable.
-        height : int
-            The height of the input image.
-        width : int
-            The width of the input image.
-        zoom_y : float
-            Vertical zoom factor.
-        zoom_x : float
-            Horizontal zoom factor.
-
-        Returns
-        -------
-        size : list
-            A list containing the sizes [height, width, final_height, final_width].
-        """
         size = [height, width, 0, 0]
 
         if inversable:
@@ -625,16 +453,6 @@ class Resize:
         return size
 
     def get_interpolation_coefficients(self, c, degree):
-        """
-        Get the interpolation coefficients for a given vector and degree.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        degree : int
-            The degree of the spline.
-        """
         tolerance = 1e-10
         z = []
         lambda_ = 1.0
@@ -680,16 +498,6 @@ class Resize:
                 c[n] = zk * (c[n + 1] - c[n])
 
     def get_samples(self, c, degree):
-        """
-        Get the samples for a given vector and degree.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        degree : int
-            The degree of the spline.
-        """
         if degree == 0 or degree == 1:
             return
         elif degree == 2:
@@ -713,44 +521,10 @@ class Resize:
 
     @staticmethod
     def get_initial_anti_causal_coefficient(c, z, tolerance):
-        """
-        Get the initial anti-causal coefficient for a given vector and z value.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        z : float
-            The z value.
-        tolerance : float
-            The tolerance for numerical calculations.
-
-        Returns
-        -------
-        float
-            The initial anti-causal coefficient.
-        """
         return (z * c[-2] + c[-1]) * z / (z * z - 1.0)
 
     @staticmethod
     def get_initial_causal_coefficient(c, z, tolerance):
-        """
-        Get the initial causal coefficient for a given vector and z value.
-
-        Parameters
-        ----------
-        c : np.ndarray
-            The input vector.
-        z : float
-            The z value.
-        tolerance : float
-            The tolerance for numerical calculations.
-
-        Returns
-        -------
-        float
-            The initial causal coefficient.
-        """
         z1 = z
         zn = z ** (len(c) - 1)
         sum_ = c[0] + zn * c[-1]
@@ -769,18 +543,6 @@ class Resize:
 
     @staticmethod
     def symmetric_fir(h, c, s):
-        """
-        Perform symmetric FIR filtering.
-
-        Parameters
-        ----------
-        h : list
-            The filter coefficients.
-        c : np.ndarray
-            The input vector.
-        s : np.ndarray
-            The output vector after filtering.
-        """
         if len(c) != len(s):
             raise IndexError("Incompatible size")
 
@@ -849,3 +611,83 @@ class Resize:
                     raise ValueError("Invalid length of data")
         else:
             raise ValueError("Invalid filter half-length (should be [2..4])")
+        
+
+def resize_image(input_img, output_size=None, zoom_factors=None, method='Least-Squares', degree='Linear'):
+    """
+    Resize an image using Least-Squares or Oblique interpolation.
+
+    Parameters:
+    - input_img: numpy.ndarray
+        The input image to resize.
+    - output_size: tuple of int (output_height, output_width), optional
+        The desired output size. If provided, zoom_factors are ignored.
+    - zoom_factors: tuple of float (zoom_y, zoom_x), optional
+        The zoom factors for the y and x dimensions.
+    - method: str, optional
+        The interpolation method to use. Options are 'Least-Squares' or 'Oblique'.
+    - degree: str, optional
+        The degree of the interpolation. Options are 'Linear' or 'Cubic'.
+
+    Returns:
+    - output_img: numpy.ndarray
+        The resized image.
+    """
+    # Determine the zoom factors
+    if output_size is not None:
+        zoom_y = output_size[0] / input_img.shape[0]
+        zoom_x = output_size[1] / input_img.shape[1]
+    elif zoom_factors is not None:
+        zoom_y, zoom_x = zoom_factors
+    else:
+        raise ValueError("Either output_size or zoom_factors must be provided.")
+
+    # Map the method to analy_degree and synthe_degree
+    if method == 'Least-Squares':
+        analy_degree = -1
+    elif method == 'Oblique':
+        if degree == 'Linear':
+            analy_degree = 1
+        elif degree == 'Cubic':
+            analy_degree = 3
+        else:
+            raise ValueError("Invalid degree for Oblique method. Choose 'Linear' or 'Cubic'.")
+    else:
+        raise ValueError("Invalid method. Choose 'Least-Squares' or 'Oblique'.")
+
+    # Map degree to interp_degree and synthe_degree
+    if degree == 'Linear':
+        interp_degree = 1
+        synthe_degree = 1
+    elif degree == 'Cubic':
+        interp_degree = 3
+        synthe_degree = 3
+    else:
+        raise ValueError("Invalid degree. Choose 'Linear' or 'Cubic'.")
+
+    # Shifts (can be adjusted if needed)
+    shift_y = 0.0
+    shift_x = 0.0
+
+    # Create the output image array
+    output_shape = (int(round(input_img.shape[0] * zoom_y)), int(round(input_img.shape[1] * zoom_x)))
+    output_img = np.zeros(output_shape, dtype=input_img.dtype)
+
+    # Create an instance of the Resize class
+    resizer = Resize()
+
+    # Perform the resizing operation
+    resizer.compute_zoom(
+        input_img,
+        output_img,
+        analy_degree,
+        synthe_degree,
+        interp_degree,
+        zoom_y,
+        zoom_x,
+        shift_y,
+        shift_x,
+        inversable=False
+    )
+
+    return output_img
