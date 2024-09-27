@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
 import imageio.v2 as imageio
-from Resize import Resize  # Importing the Resize class from Resize.py
+from Resize import resize_image
 import time
 
 def create_square_image():
@@ -51,92 +51,33 @@ def compute_mse(original, processed):
     return mse
 
 def resize_and_compute_snr(input_image_normalized, method, interpolation, zoom_factor):
-    # Set degrees based on interpolation method
-    if interpolation == "Linear":
-        interp_degree = 1
-        synthe_degree = 1
-        analy_degree = 1
-    elif interpolation == "Quadratic":
-        interp_degree = 2
-        synthe_degree = 2
-        analy_degree = 2
-    else:  # Cubic
-        interp_degree = 3
-        synthe_degree = 3
-        analy_degree = 3
-
-    # Interpolation method must fulfill requirement: analy_degree = -1
-    # Least-Squares method must fulfill requirement: analy_degree = interp_degree
-    # Oblique projection method must fulfill requirement: -1 < analy_degree < interp_degree
-
-    if method == "Interpolation":
-        analy_degree = -1
-    elif method == "Oblique projection":
-        if interpolation == "Linear":
-            analy_degree = 0
-        elif interpolation == "Quadratic":
-            analy_degree = 1
-        else:  # Cubic
-            analy_degree = 2
-
-    # Define the output image size
-    output_height = int(np.round(input_image_normalized.shape[0] * zoom_factor))
-    output_width = int(np.round(input_image_normalized.shape[1] * zoom_factor))
-    output_image = np.zeros((output_height, output_width), dtype=np.float64)
-
-    # Create instance of Resize class
-    resizer = Resize()
-
-    # Perform resizing with a copy of the input image
-    input_image_copy = input_image_normalized.copy()
-    resizer.compute_zoom(
-        input_image_copy,
-        output_image,
-        analy_degree=analy_degree,
-        synthe_degree=synthe_degree,
-        interp_degree=interp_degree,
-        zoom_y=zoom_factor,
-        zoom_x=zoom_factor,
-        shift_y=0,
-        shift_x=0,
-        inversable=False,
+    # Normalize the image to [0, 1] for the resize function
+    
+    # Perform shrinking
+    shrunken_image = resize_image(
+        input_img_normalized=input_image_normalized,
+        zoom_factors=(zoom_factor, zoom_factor),
+        method=method,
+        interpolation=interpolation
     )
-
-    # Define the reverse zoom output image size
-    reverse_zoom_factor = 1.0 / zoom_factor
-    reverse_output_height = int(np.round(output_image.shape[0] * reverse_zoom_factor))
-    reverse_output_width = int(np.round(output_image.shape[1] * reverse_zoom_factor))
-    reverse_output_image = np.zeros((reverse_output_height, reverse_output_width), dtype=np.float64)
-
-    # Perform reverse resizing with a copy of the output image
-    output_image_copy = output_image.copy()
-    resizer.compute_zoom(
-        output_image_copy,
-        reverse_output_image,
-        analy_degree=analy_degree,
-        synthe_degree=synthe_degree,
-        interp_degree=interp_degree,
-        zoom_y=reverse_zoom_factor,
-        zoom_x=reverse_zoom_factor,
-        shift_y=0,
-        shift_x=0,
-        inversable=False,
+    
+    # Perform expansion back to the original size
+    expanded_image = resize_image(
+        input_img_normalized=shrunken_image,
+        output_size=input_image_normalized.shape,
+        method=method,
+        interpolation=interpolation
     )
-
-    # Resize the reverse output image to match the original dimensions
-    zoom_factors = (input_image_normalized.shape[0] / reverse_output_image.shape[0],
-                    input_image_normalized.shape[1] / reverse_output_image.shape[1])
-    resized_reverse_output_image = zoom(reverse_output_image, zoom_factors, order=interp_degree)
 
     # Compute SNR and MSE
-    snr = compute_snr(input_image_normalized, resized_reverse_output_image)
-    mse = compute_mse(input_image_normalized, resized_reverse_output_image)
+    snr = compute_snr(input_image_normalized, expanded_image)
+    mse = compute_mse(input_image_normalized, expanded_image)
 
-    # Convert images to range [0, 255] for display
-    output_image_display = np.clip(output_image * 255.0, 0, 255)
-    resized_reverse_output_image_display = np.clip(resized_reverse_output_image * 255.0, 0, 255)
-
-    return output_image_display, resized_reverse_output_image_display, snr, mse
+    # Convert images back to range [0, 255] for display
+    shrunken_image_display = np.clip(shrunken_image * 255.0, 0, 255)
+    expanded_image_display = np.clip(expanded_image * 255.0, 0, 255)
+    
+    return shrunken_image_display, expanded_image_display, snr, mse
 
 def resize_with_scipy_zoom(input_image_normalized, zoom_factor, interpolation):
     # Set order based on interpolation type
@@ -191,24 +132,20 @@ def main():
     input_image_normalized = (input_image / 255.0).astype(np.float64)
 
     # Define the zoom factor
-    zoom_factor = 0.3
+    zoom_factor = 1/3.14
 
     # Define method and interpolation type
     method = "Least-Squares"
-    interpolation_type = "Cubic"
+    interpolation_type = "Linear"
 
     # Measure time and process images with least squares method
     start_time = time.time()
-    ls_output_image, ls_resized_reverse_output_image, ls_snr, ls_mse = resize_and_compute_snr(
-        input_image_normalized, method, interpolation_type, zoom_factor
-    )
+    ls_output_image, ls_resized_reverse_output_image, ls_snr, ls_mse = resize_and_compute_snr(input_image_normalized, method, interpolation_type, zoom_factor)
     ls_time = time.time() - start_time
 
     # Measure time and process images with scipy zoom
     start_time = time.time()
-    scipy_output_image, scipy_resized_reverse_output_image, scipy_snr, scipy_mse = resize_with_scipy_zoom(
-        input_image_normalized, zoom_factor, interpolation_type
-    )
+    scipy_output_image, scipy_resized_reverse_output_image, scipy_snr, scipy_mse = resize_with_scipy_zoom(input_image_normalized, zoom_factor, interpolation_type)
     scipy_time = time.time() - start_time
 
     # Convert the original image for display

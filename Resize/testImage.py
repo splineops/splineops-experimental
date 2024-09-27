@@ -20,7 +20,7 @@ shrink_factor = 0.2  # Shrink the image to 20% of its original size
 shrunken_img = resize_image(
     input_img_normalized=input_image_normalized,
     zoom_factors=(shrink_factor, shrink_factor),
-    method='Oblique',
+    method='Least-Squares',
     interpolation='Linear',
 )
 
@@ -28,7 +28,7 @@ shrunken_img = resize_image(
 expanded_img = resize_image(
     input_img_normalized=shrunken_img,
     output_size=input_img.shape,  # Use the original image size
-    method='Oblique',
+    method='Least-Squares',
     interpolation='Linear',
 )
 
