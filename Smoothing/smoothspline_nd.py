@@ -18,14 +18,13 @@ def smoothspline_nd(data, lambda_, gamma):
 
     # Compute the frequency grids for each dimension
     freq_grids = np.meshgrid(*[np.fft.fftfreq(n) for n in dims], indexing='ij')
-    omega_squared = np.zeros(dims)
-    for grid in freq_grids:
-        omega_squared += (2 * np.pi * grid) ** 2
-    # Removed fftshift from omega_squared
-    # omega_squared = fftshift(omega_squared)
+    
+    # Vectorized computation of omega_squared
+    freq_grids_stacked = np.stack(freq_grids, axis=0)  # Shape: (ndim, dims...)
+    omega_squared = np.sum((2 * np.pi * freq_grids_stacked) ** 2, axis=0)
 
     # Compute the Butterworth-like filter in Fourier domain
-    H = 1 / (1 + lambda_ * (omega_squared) ** gamma)
+    H = 1 / (1 + lambda_ * omega_squared ** gamma)
 
     # Apply the filter
     data_fft = fftn(data)
