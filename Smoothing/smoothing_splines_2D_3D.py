@@ -2,12 +2,12 @@ import numpy as np
 from scipy.fft import fftn, ifftn, fftfreq
 import matplotlib.pyplot as plt
 
-def butterworth_filter_2d(data, cutoff_freq, order):
+def butterworth_filter_nd(data, cutoff_freq, order):
     """
-    Apply a 2D Butterworth low-pass filter to a 2D image.
+    Apply a Butterworth low-pass filter to N-dimensional data (2D, 3D, etc.).
 
     Parameters:
-    data (np.ndarray): 2D input data (e.g., an image).
+    data (np.ndarray): N-dimensional input data (e.g., 2D image, 3D volume).
     cutoff_freq (float): Cutoff frequency of the filter.
     order (int): Order of the Butterworth filter (controls sharpness of cutoff).
 
@@ -15,103 +15,118 @@ def butterworth_filter_2d(data, cutoff_freq, order):
     np.ndarray: Smoothed data after applying the Butterworth filter.
     """
     # Get the shape of the data
-    rows, cols = data.shape
+    shape = data.shape
+    N = len(shape)  # Number of dimensions
     
-    # Create 2D frequency grid
-    u = fftfreq(rows).reshape(-1, 1)
-    v = fftfreq(cols).reshape(1, -1)
+    # Create frequency grids for each dimension
+    freqs = [fftfreq(s).reshape([-1 if i == dim else 1 for i, s in enumerate(shape)]) for dim, s in enumerate(shape)]
     
-    # Compute the distance from the origin in the frequency domain
-    D_uv = np.sqrt(u**2 + v**2)
+    # Compute the distance from the origin in the frequency domain (Euclidean distance in N-dimensions)
+    D = np.sqrt(sum(f**2 for f in freqs))
     
     # Create the Butterworth filter in the frequency domain
-    H_uv = 1 / (1 + (D_uv / cutoff_freq)**(2 * order))
+    H = 1 / (1 + (D / cutoff_freq)**(2 * order))
     
     # Apply the filter: FFT -> multiply -> IFFT
     data_fft = fftn(data)
-    filtered_fft = data_fft * H_uv
+    filtered_fft = data_fft * H
     filtered_data = np.real(ifftn(filtered_fft))
     
     return filtered_data
 
-def butterworth_filter_3d(data, cutoff_freq, order):
+def compute_snr(clean_signal, noisy_signal):
     """
-    Apply a 3D Butterworth low-pass filter to a 3D volume.
+    Compute the Signal-to-Noise Ratio (SNR).
 
     Parameters:
-    data (np.ndarray): 3D input data (e.g., a volumetric image).
-    cutoff_freq (float): Cutoff frequency of the filter.
-    order (int): Order of the Butterworth filter (controls sharpness of cutoff).
+    clean_signal (np.ndarray): Original clean signal.
+    noisy_signal (np.ndarray): Noisy signal.
 
     Returns:
-    np.ndarray: Smoothed data after applying the Butterworth filter.
+    float: SNR value in decibels (dB).
     """
-    # Get the shape of the data
-    depth, rows, cols = data.shape
-    
-    # Create 3D frequency grid
-    u = fftfreq(depth).reshape(-1, 1, 1)
-    v = fftfreq(rows).reshape(1, -1, 1)
-    w = fftfreq(cols).reshape(1, 1, -1)
-    
-    # Compute the distance from the origin in the frequency domain
-    D_uvw = np.sqrt(u**2 + v**2 + w**2)
-    
-    # Create the Butterworth filter in the frequency domain
-    H_uvw = 1 / (1 + (D_uvw / cutoff_freq)**(2 * order))
-    
-    # Apply the filter: FFT -> multiply -> IFFT
-    data_fft = fftn(data)
-    filtered_fft = data_fft * H_uvw
-    filtered_data = np.real(ifftn(filtered_fft))
-    
-    return filtered_data
+    signal_power = np.mean(clean_signal ** 2)
+    noise_power = np.mean((noisy_signal - clean_signal) ** 2)
+    snr = 10 * np.log10(signal_power / noise_power)
+    return snr
 
 # Example usage for 2D data (image)
 def demo_2d_butterworth():
-    # Create a 2D noisy image (for demo purposes)
+    # Create a 2D clean signal (for demo purposes)
     x = np.linspace(0, 1, 256)
     y = np.linspace(0, 1, 256)
     X, Y = np.meshgrid(x, y)
-    Z = np.sin(4 * np.pi * X) + np.sin(4 * np.pi * Y) + 0.3 * np.random.randn(256, 256)
+    clean_Z = np.sin(4 * np.pi * X) + np.sin(4 * np.pi * Y)
+    
+    # Add noise to create a noisy image
+    noisy_Z = clean_Z + 0.3 * np.random.randn(256, 256)
+    
+    # Compute SNR before filtering
+    snr_before = compute_snr(clean_Z, noisy_Z)
     
     # Apply Butterworth filter
-    cutoff_freq = 0.1
+    cutoff_freq = 0.001
     order = 2
-    Z_smooth = butterworth_filter_2d(Z, cutoff_freq, order)
+    Z_smooth = butterworth_filter_nd(noisy_Z, cutoff_freq, order)
     
-    # Plot the original and filtered images
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
-    plt.title('Noisy Image')
-    plt.imshow(Z, cmap='gray')
-    plt.subplot(1, 2, 2)
-    plt.title('Filtered Image (Butterworth)')
+    # Compute SNR after filtering
+    snr_after = compute_snr(clean_Z, Z_smooth)
+    
+    # Plot the original, noisy, and filtered images
+    plt.figure(figsize=(15, 5))
+    
+    plt.subplot(1, 3, 1)
+    plt.title('Clean Image')
+    plt.imshow(clean_Z, cmap='gray')
+    
+    plt.subplot(1, 3, 2)
+    plt.title(f'Noisy Image (SNR: {snr_before:.2f} dB)')
+    plt.imshow(noisy_Z, cmap='gray')
+    
+    plt.subplot(1, 3, 3)
+    plt.title(f'Filtered Image (SNR: {snr_after:.2f} dB)')
     plt.imshow(Z_smooth, cmap='gray')
+    
     plt.show()
 
 # Example usage for 3D data (volume)
 def demo_3d_butterworth():
-    # Create a 3D noisy volume (for demo purposes)
+    # Create a 3D clean volume (for demo purposes)
     x = np.linspace(0, 1, 64)
     y = np.linspace(0, 1, 64)
     z = np.linspace(0, 1, 64)
     X, Y, Z = np.meshgrid(x, y, z)
-    V = np.sin(4 * np.pi * X) + np.sin(4 * np.pi * Y) + np.sin(4 * np.pi * Z) + 0.3 * np.random.randn(64, 64, 64)
+    clean_V = np.sin(4 * np.pi * X) + np.sin(4 * np.pi * Y) + np.sin(4 * np.pi * Z)
+    
+    # Add noise to create a noisy volume
+    noisy_V = clean_V + 0.3 * np.random.randn(64, 64, 64)
+    
+    # Compute SNR before filtering
+    snr_before = compute_snr(clean_V, noisy_V)
     
     # Apply Butterworth filter
     cutoff_freq = 0.1
     order = 2
-    V_smooth = butterworth_filter_3d(V, cutoff_freq, order)
+    V_smooth = butterworth_filter_nd(noisy_V, cutoff_freq, order)
+    
+    # Compute SNR after filtering
+    snr_after = compute_snr(clean_V, V_smooth)
     
     # Visualize one slice of the original and filtered volumes
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
-    plt.title('Noisy Volume Slice')
-    plt.imshow(V[32, :, :], cmap='gray')
-    plt.subplot(1, 2, 2)
-    plt.title('Filtered Volume Slice (Butterworth)')
+    plt.figure(figsize=(15, 5))
+    
+    plt.subplot(1, 3, 1)
+    plt.title('Clean Volume Slice')
+    plt.imshow(clean_V[32, :, :], cmap='gray')
+    
+    plt.subplot(1, 3, 2)
+    plt.title(f'Noisy Volume Slice (SNR: {snr_before:.2f} dB)')
+    plt.imshow(noisy_V[32, :, :], cmap='gray')
+    
+    plt.subplot(1, 3, 3)
+    plt.title(f'Filtered Volume Slice (SNR: {snr_after:.2f} dB)')
     plt.imshow(V_smooth[32, :, :], cmap='gray')
+    
     plt.show()
 
 # Run the 2D demo
