@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.fft import fftn, ifftn, fftfreq
-from skimage import data
 
 def smoothspline_nd(data, lambda_, gamma):
     data = np.asarray(data)
@@ -43,10 +42,16 @@ def compute_snr(clean_signal, noisy_signal):
     snr = 10 * np.log10(signal_power / noise_power)
     return snr
 
-# Load an example image
-def load_image():
-    img = data.camera().astype(np.float64)
-    img /= 255.0  # Normalize to [0, 1]
+# Create a 2D sinusoid image
+def create_sinusoid_image(size=(256, 256)):
+    """
+    Creates a synthetic 2D sinusoid image.
+    """
+    x = np.linspace(0, 1, size[1])
+    y = np.linspace(0, 1, size[0])
+    X, Y = np.meshgrid(x, y)
+    img = np.sin(8 * np.pi * X) + np.sin(8 * np.pi * Y)
+    img = (img - img.min()) / (img.max() - img.min())  # Normalize to [0, 1]
     return img
 
 # Add noise to the image
@@ -59,18 +64,18 @@ def add_noise(img, snr_db):
 
 # Parameters
 snr_db = 10.0  # Desired SNR in dB
-original_img = load_image()
+original_img = create_sinusoid_image()  # Use the sinusoid image
 noisy_img = add_noise(original_img, snr_db)
 
 # Compute SNR before filtering
 snr_noisy = compute_snr(original_img, noisy_img)
 
 # Parameters for filters
-gamma = 2.0  # For smoothspline_nd
+gamma = 3.0  # For smoothspline_nd
 n = gamma    # Order of Butterworth filter
 
 # Relation between lambda_ and cutoff_freq
-lambda_ = 0.01  # Choose lambda_
+lambda_ = 0.1  # Choose lambda_
 cutoff_freq = 1 / (2 * np.pi * lambda_ ** (1 / (2 * n)))
 
 # Apply smoothspline_nd
@@ -110,7 +115,7 @@ plt.axis('off')
 
 plt.subplot(2, 2, 4)
 plt.imshow(original_img, cmap='gray')
-plt.title('Original Image')
+plt.title('Original Sinusoid Image')
 plt.axis('off')
 
 plt.tight_layout()
