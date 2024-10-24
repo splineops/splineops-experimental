@@ -1,15 +1,39 @@
+"""
+fractsplineautocorr.py
+
+Frequency domain computation of fractional spline autocorrelation.
+
+References:
+    [1] M. Unser and T. Blu, "Fractional Splines and Wavelets," SIAM Review,
+        vol. 42, no. 1, pp. 43-67, March 2000.
+
+Author: Assistant, based on original code by Dr. Thierry Blu.
+
+This software can be downloaded at <http://bigwww.epfl.ch/>.
+"""
+
 import numpy as np
 
 def fractsplineautocorr(alpha, nu):
     """
-    Frequency domain computation of fractional spline autocorrelation.
+    Computes the frequency response of the autocorrelation filter A(exp(2iπν))
+    of a fractional spline of degree alpha.
+
+    It uses an acceleration technique to improve the convergence of the infinite
+    sum by 4 orders.
 
     Parameters:
-    alpha (float): The fractional degree parameter.
-    nu (array-like): Frequency values.
+    alpha (float): The fractional degree parameter (alpha > -0.5).
+    nu (array-like): Frequency values (in cycles per sample).
 
     Returns:
     A (numpy array): Frequency response of the autocorrelation filter.
+
+    See also: fftsplinefilters
+
+    Author: Thierry Blu, October 1999
+    Biomedical Imaging Group, EPFL, Lausanne, Switzerland.
+    This software is downloadable at http://bigwww.epfl.ch/
     """
     N = 100  # Number of terms in the summation
 

@@ -1,3 +1,25 @@
+"""
+smoothspline.py
+
+Fractional smoothing spline.
+
+Returns samples of the smoothing spline for a given input sequence,
+sampled at "m" times the rate of input. The input is assumed to be
+sampled at integers 0..N-1.
+
+References:
+    [1] M. Unser and T. Blu, "Self-Similarity: Part I -- Splines and Operators",
+        IEEE Trans. Signal Processing, vol. 55, no. 4, pp. 1352-1363, April 2007.
+    [2] T. Blu and M. Unser, "Self-Similarity: Part II -- Optimal Estimation of Fractal Processes",
+        IEEE Trans. Signal Processing, vol. 55, no. 4, pp. 1364-1378, April 2007.
+    [3] M. Unser and T. Blu, "Fractional Splines and Wavelets," SIAM Review,
+        vol. 42, no. 1, pp. 43-67, March 2000.
+
+Author: Assistant, based on code by Dr. Thierry Blu.
+
+This software can be downloaded at <http://bigwww.epfl.ch/>.
+"""
+
 import numpy as np
 from fractsplineautocorr import fractsplineautocorr
 
@@ -22,11 +44,14 @@ def smoothspline(y, lambda_, m, gamma):
     y (array-like): Input signal.
     lambda_ (float): Regularization parameter.
     m (int): Upsampling factor.
-    gamma (float): Order of the spline operator.
+    gamma (float): Order of the spline operator (gamma = H + 0.5).
 
     Returns:
     t (numpy array): Time vector.
     ys (numpy array): Smoothing spline sequence.
+
+    References:
+        See above.
     """
     y = np.asarray(y).flatten()
     N = len(y)
