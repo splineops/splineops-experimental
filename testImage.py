@@ -1,90 +1,101 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.datasets import ascent
-
-# Import the resize_image function from your package
 from resize import resize_image
 
-# Load the ascent image as a NumPy array
-input_img = ascent()  # This is a 512x512 grayscale image with values from 0 to 255
+# Mathematical functions for expected values in each pattern
 
-# Convert the input image to float64 for processing, but keep the original for plotting
-input_img_float = input_img.astype(np.float64)
+def expected_gradient_value(x, width):
+    """Expected value at position x for a gradient pattern of given width."""
+    return x / width
 
-input_image_normalized = (input_img / 255.0).astype(np.float64)
+def expected_sinusoidal_value(x, width, frequency=5):
+    """Expected value at position x for a sinusoidal pattern of given width."""
+    normalized_x = x / width * 2 * np.pi * frequency
+    return np.sin(normalized_x) * 0.5 + 0.5
 
-# Define the shrink factor
-shrink_factor = 0.2  # Shrink the image to 20% of its original size
+def expected_checkerboard_value(x, y, square_size):
+    """Expected value at position (x, y) for a checkerboard pattern."""
+    row, col = int(y // square_size), int(x // square_size)
+    return (row + col) % 2
 
-# Shrink the image using the resize_image function with inversable=True
-shrunken_img = resize_image(
-    input_img_normalized=input_image_normalized,
-    zoom_factors=(shrink_factor, shrink_factor),
-    method='Least-Squares',
-    interpolation='Linear',
-)
-
-# Now expand the shrunken image back to the original size
-expanded_img = resize_image(
-    input_img_normalized=shrunken_img,
-    output_size=input_img.shape,  # Use the original image size
-    method='Least-Squares',
-    interpolation='Linear',
-)
-
-# Convert images back to uint8 for display
-input_img_display = input_img  # Original image, already in uint8
-shrunken_img_display = np.clip(shrunken_img * 255, 0, 255).astype(np.uint8)
-expanded_img_display = np.clip(expanded_img * 255, 0, 255).astype(np.uint8)
-
-# Compute the difference between the original and re-expanded images
-difference_img = np.abs(input_image_normalized - expanded_img)
-difference_img_display = np.clip(difference_img * 255 * 5, 0, 255).astype(np.uint8)  # Enhanced for visibility
-
-# Compute SNR and MSE
-def compute_snr(original, processed):
-    # Compute the signal-to-noise ratio
-    signal_power = np.mean(original ** 2)
-    noise_power = np.mean((original - processed) ** 2)
-    snr = 10 * np.log10(signal_power / noise_power)
-    return snr
-
-def compute_mse(original, processed):
-    # Compute the mean squared error
-    mse = np.mean((original - processed) ** 2)
+# Function to calculate the MSE using expected values
+def calculate_mse_with_expected(pattern_name, width, height, zoom_factors, resized_image):
+    """Calculates MSE between the resized image and mathematically expected values."""
+    target_height, target_width = resized_image.shape
+    
+    # Calculate expected values based on pattern type
+    if pattern_name == "Gradient":
+        expected_values = np.array([[expected_gradient_value(x / zoom_factors[1], width)
+                                     for x in range(target_width)]
+                                     for y in range(target_height)])
+    elif pattern_name == "Sinusoidal":
+        expected_values = np.array([[expected_sinusoidal_value(x / zoom_factors[1], width, frequency=10)
+                                     for x in range(target_width)]
+                                     for y in range(target_height)])
+    elif pattern_name == "Checkerboard":
+        expected_values = np.array([[expected_checkerboard_value(x / zoom_factors[1], y / zoom_factors[0], 100)
+                                     for x in range(target_width)]
+                                     for y in range(target_height)])
+    else:
+        raise ValueError("Unknown pattern name")
+    
+    # Calculate MSE
+    mse = np.mean((expected_values - resized_image) ** 2)
     return mse
 
-snr = compute_snr(input_image_normalized, expanded_img)
-mse = compute_mse(input_image_normalized, expanded_img)
-print(f"SNR: {snr:.2f} dB")
-print(f"MSE: {mse:.6f}")
+# Resize and Compare Function
+def test_resize_pattern(pattern_name, width, height, zoom_factors=(0.5, 0.5), interpolation='Cubic'):
+    """Generates a pattern, resizes it, and compares with mathematically expected values."""
+    # Generate pattern and resize
+    if pattern_name == "Gradient":
+        pattern = np.linspace(0, 1, width).reshape(1, -1).repeat(height, axis=0)
+    elif pattern_name == "Sinusoidal":
+        x = np.linspace(0, 2 * np.pi * 10, width)
+        y = np.sin(x) * 0.5 + 0.5
+        pattern = np.tile(y, (height, 1))
+    elif pattern_name == "Checkerboard":
+        rows = (np.arange(height) // 100) % 2
+        cols = (np.arange(width) // 100) % 2
+        pattern = np.bitwise_xor.outer(rows, cols).astype(float)
+    else:
+        raise ValueError("Unknown pattern name")
+    
+    # Resize pattern
+    resized_image = resize_image(pattern, zoom_factors=zoom_factors, interpolation=interpolation)
+    
+    # Calculate MSE and PSNR with expected values
+    mse = calculate_mse_with_expected(pattern_name, width, height, zoom_factors, resized_image)
+    psnr = 10 * np.log10(1 / mse) if mse != 0 else float('inf')
+    
+    print(f"{pattern_name} with zoom factors {zoom_factors}")
+    print(f"Mean Squared Error (MSE): {mse}")
+    print(f"Peak Signal-to-Noise Ratio (PSNR): {psnr} dB\n")
+    
+    # Plot original and resized images
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+    axes[0].imshow(pattern, cmap='gray', vmin=0, vmax=1)
+    axes[0].set_title(f"Original {pattern_name}")
+    axes[0].axis('off')
+    
+    axes[1].imshow(resized_image, cmap='gray', vmin=0, vmax=1)
+    axes[1].set_title(f"Resized {pattern_name}")
+    axes[1].axis('off')
+    
+    plt.show()
 
-# Plot the images
-plt.figure(figsize=(12, 8))
+# Main test function
+def main():
+    width, height = 1000, 1000
+    print("Testing on Gradient, Sinusoidal, and Checkerboard Patterns\n")
 
-# Original image
-plt.subplot(2, 2, 1)
-plt.imshow(input_img_display, cmap='gray', vmin=0, vmax=255)
-plt.title('Original Image')
-plt.axis('off')
+    # Test Gradient Pattern
+    test_resize_pattern("Gradient", width, height, zoom_factors=(0.75, 0.5))
 
-# Shrunken image
-plt.subplot(2, 2, 2)
-plt.imshow(shrunken_img_display, cmap='gray', vmin=0, vmax=255)
-plt.title(f'Shrunken Image (Factor {shrink_factor})')
-plt.axis('off')
+    # Test Sinusoidal Pattern
+    test_resize_pattern("Sinusoidal", width, height, zoom_factors=(0.5, 0.5))
 
-# Re-expanded image
-plt.subplot(2, 2, 3)
-plt.imshow(expanded_img_display, cmap='gray', vmin=0, vmax=255)
-plt.title('Re-expanded Image')
-plt.axis('off')
+    # Test Checkerboard Pattern
+    test_resize_pattern("Checkerboard", width, height, zoom_factors=(0.3, 0.6))
 
-# Difference image
-plt.subplot(2, 2, 4)
-plt.imshow(difference_img_display, cmap='gray', vmin=0, vmax=255)
-plt.title('Difference Image (Enhanced)')
-plt.axis('off')
-
-plt.tight_layout()
-plt.show()
+if __name__ == "__main__":
+    main()
