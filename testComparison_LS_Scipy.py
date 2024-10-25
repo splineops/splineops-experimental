@@ -58,7 +58,8 @@ def resize_and_compute_snr(input_image_normalized, method, interpolation, zoom_f
         input_img_normalized=input_image_normalized,
         zoom_factors=(zoom_factor, zoom_factor),
         method=method,
-        interpolation=interpolation
+        interpolation=interpolation,
+        inversable=False
     )
     
     # Perform expansion back to the original size
@@ -66,7 +67,8 @@ def resize_and_compute_snr(input_image_normalized, method, interpolation, zoom_f
         input_img_normalized=shrunken_image,
         output_size=input_image_normalized.shape,
         method=method,
-        interpolation=interpolation
+        interpolation=interpolation,
+        inversable=False
     )
 
     # Compute SNR and MSE
