@@ -8,10 +8,11 @@ def expected_gradient_value(x, width):
     """Expected value at position x for a gradient pattern of given width."""
     return x / width
 
-def expected_sinusoidal_value(x, width, frequency=5):
-    """Expected value at position x for a sinusoidal pattern of given width."""
-    normalized_x = x / width * 2 * np.pi * frequency
-    return np.sin(normalized_x) * 0.5 + 0.5
+def expected_sinusoidal_value(x, y, width, height, freq_x=10, freq_y=5):
+    """Expected value at position (x, y) for a 2D sinusoidal pattern."""
+    normalized_x = x / width * 2 * np.pi * freq_x
+    normalized_y = y / height * 2 * np.pi * freq_y
+    return (np.sin(normalized_x) + np.sin(normalized_y)) * 0.25 + 0.5
 
 def expected_checkerboard_value(x, y, square_size):
     """Expected value at position (x, y) for a checkerboard pattern."""
@@ -29,7 +30,7 @@ def calculate_mse_with_expected(pattern_name, width, height, zoom_factors, resiz
                                      for x in range(target_width)]
                                      for y in range(target_height)])
     elif pattern_name == "Sinusoidal":
-        expected_values = np.array([[expected_sinusoidal_value(x / zoom_factors[1], width, frequency=10)
+        expected_values = np.array([[expected_sinusoidal_value(x / zoom_factors[1], y / zoom_factors[0], width, height, freq_x=10, freq_y=5)
                                      for x in range(target_width)]
                                      for y in range(target_height)])
     elif pattern_name == "Checkerboard":
@@ -51,8 +52,9 @@ def test_resize_pattern(pattern_name, width, height, zoom_factors=(0.5, 0.5), in
         pattern = np.linspace(0, 1, width).reshape(1, -1).repeat(height, axis=0)
     elif pattern_name == "Sinusoidal":
         x = np.linspace(0, 2 * np.pi * 10, width)
-        y = np.sin(x) * 0.5 + 0.5
-        pattern = np.tile(y, (height, 1))
+        y = np.linspace(0, 2 * np.pi * 5, height)
+        X, Y = np.meshgrid(x, y)
+        pattern = (np.sin(X) + np.sin(Y)) * 0.25 + 0.5  # Normalized to [0, 1]
     elif pattern_name == "Checkerboard":
         rows = (np.arange(height) // 100) % 2
         cols = (np.arange(width) // 100) % 2
@@ -89,13 +91,13 @@ def main():
     print("Testing on Gradient, Sinusoidal, and Checkerboard Patterns\n")
 
     # Test Gradient Pattern
-    test_resize_pattern("Gradient", width, height, zoom_factors=(0.75, 0.75))
+    test_resize_pattern("Gradient", width, height, zoom_factors=(0.75, 0.5))
 
     # Test Sinusoidal Pattern
-    test_resize_pattern("Sinusoidal", width, height, zoom_factors=(0.5, 0.3))
+    test_resize_pattern("Sinusoidal", width, height, zoom_factors=(0.5, 0.5))
 
     # Test Checkerboard Pattern
-    test_resize_pattern("Checkerboard", width, height, zoom_factors=(1.3, 1.3432))
+    test_resize_pattern("Checkerboard", width, height, zoom_factors=(0.3, 0.6))
 
 if __name__ == "__main__":
     main()
