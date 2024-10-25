@@ -4,6 +4,9 @@ from .config import TOLERANCE
 
 # Beta function implementation for spline calculations
 def beta(x, degree):
+    """
+    Computes the value of the B-spline basis function at a given point x for a specified degree.
+    """
     betan = 0.0
     if degree == 0:
         if abs(x) < 0.5 or x == -0.5:
