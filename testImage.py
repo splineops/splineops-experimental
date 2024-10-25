@@ -89,13 +89,13 @@ def main():
     print("Testing on Gradient, Sinusoidal, and Checkerboard Patterns\n")
 
     # Test Gradient Pattern
-    test_resize_pattern("Gradient", width, height, zoom_factors=(0.75, 0.5))
+    test_resize_pattern("Gradient", width, height, zoom_factors=(0.75, 0.75))
 
     # Test Sinusoidal Pattern
-    test_resize_pattern("Sinusoidal", width, height, zoom_factors=(0.5, 0.5))
+    test_resize_pattern("Sinusoidal", width, height, zoom_factors=(0.5, 0.3))
 
     # Test Checkerboard Pattern
-    test_resize_pattern("Checkerboard", width, height, zoom_factors=(0.3, 0.6))
+    test_resize_pattern("Checkerboard", width, height, zoom_factors=(1.3, 1.3432))
 
 if __name__ == "__main__":
     main()
