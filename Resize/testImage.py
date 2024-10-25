@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.datasets import ascent
 
 # Import the resize_image function from your package
-from Resize import resize_image
+from resize import resize_image
 
 # Load the ascent image as a NumPy array
 input_img = ascent()  # This is a 512x512 grayscale image with values from 0 to 255

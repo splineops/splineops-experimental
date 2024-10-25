@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
 import imageio.v2 as imageio
-from Resize import resize_image
+from resize import resize_image
 import time
 
 def create_square_image():
