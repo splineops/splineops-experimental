@@ -29,7 +29,7 @@ class Resize:
         self.tolerance = 1e-9
 
     def compute_zoom(self, input_img, output_img, analy_degree, synthe_degree,
-                     interp_degree, zoom_y, zoom_x, shift_y, shift_x, inversable):
+                    interp_degree, zoom_y, zoom_x, shift_y, shift_x, inversable):
         self.interp_degree = interp_degree
         self.analy_degree = analy_degree
         self.synthe_degree = synthe_degree
@@ -50,6 +50,7 @@ class Resize:
         self.corr_degree = analy_degree + synthe_degree + 1
         self.half_support = (total_degree + 1) / 2.0
 
+        # Calculate and set up row-related arrays
         add_border_height = max(border(final_size_y, self.corr_degree), total_degree)
         final_total_height = final_size_y + add_border_height
         length_total_height = working_size_y + int(np.ceil(add_border_height / zoom_y))
@@ -73,6 +74,7 @@ class Resize:
                 self.spline_array_height[i] = fact_height * beta(affine_indices_height[l] - k, total_degree)
                 i += 1
 
+        # Calculate and set up column-related arrays
         add_border_width = max(border(final_size_x, self.corr_degree), total_degree)
         final_total_width = final_size_x + add_border_width
         length_total_width = working_size_x + int(np.ceil(add_border_width / zoom_x))
@@ -113,6 +115,7 @@ class Resize:
 
         image = np.zeros((working_size_y, final_size_x))
 
+        # Perform row and column resampling using the unified function
         if inversable:
             inver_image = np.zeros((working_size_y, working_size_x))
             inver_image[:ny, :nx] = input_img
@@ -125,28 +128,73 @@ class Resize:
             for y in range(working_size_y):
                 working_row = inver_image[y, :]
                 get_interpolation_coefficients(working_row, interp_degree)
-                self.resampling_row(working_row, output_row, add_vector_width, add_output_vector_width, period_row_sym, period_row_asym)
+                # Row resampling
+                self.resampling(
+                    input_vector=working_row,
+                    output_vector=output_row,
+                    add_vector=add_vector_width,
+                    add_output_vector=add_output_vector_width,
+                    max_sym_boundary=period_row_sym,
+                    max_asym_boundary=period_row_asym,
+                    index_min=self.index_min_width,
+                    index_max=self.index_max_width,
+                    spline_array=self.spline_array_width
+                )
                 image[y, :] = output_row
 
             for y in range(final_size_x):
                 working_column = image[:, y]
                 get_interpolation_coefficients(working_column, interp_degree)
-                self.resampling_column(working_column, output_column, add_vector_height, add_output_vector_height, period_column_sym, period_column_asym)
+                # Column resampling
+                self.resampling(
+                    input_vector=working_column,
+                    output_vector=output_column,
+                    add_vector=add_vector_height,
+                    add_output_vector=add_output_vector_height,
+                    max_sym_boundary=period_column_sym,
+                    max_asym_boundary=period_column_asym,
+                    index_min=self.index_min_height,
+                    index_max=self.index_max_height,
+                    spline_array=self.spline_array_height
+                )
                 output_img[:, y] = output_column
         else:
             for y in range(working_size_y):
                 working_row = input_img[y, :]
                 get_interpolation_coefficients(working_row, interp_degree)
-                self.resampling_row(working_row, output_row, add_vector_width, add_output_vector_width, period_row_sym, period_row_asym)
+                # Row resampling
+                self.resampling(
+                    input_vector=working_row,
+                    output_vector=output_row,
+                    add_vector=add_vector_width,
+                    add_output_vector=add_output_vector_width,
+                    max_sym_boundary=period_row_sym,
+                    max_asym_boundary=period_row_asym,
+                    index_min=self.index_min_width,
+                    index_max=self.index_max_width,
+                    spline_array=self.spline_array_width
+                )
                 image[y, :] = output_row
 
             for y in range(final_size_x):
                 working_column = image[:, y]
                 get_interpolation_coefficients(working_column, interp_degree)
-                self.resampling_column(working_column, output_column, add_vector_height, add_output_vector_height, period_column_sym, period_column_asym)
+                # Column resampling
+                self.resampling(
+                    input_vector=working_column,
+                    output_vector=output_column,
+                    add_vector=add_vector_height,
+                    add_output_vector=add_output_vector_height,
+                    max_sym_boundary=period_column_sym,
+                    max_asym_boundary=period_column_asym,
+                    index_min=self.index_min_height,
+                    index_max=self.index_max_height,
+                    spline_array=self.spline_array_height
+                )
                 output_img[:, y] = output_column
 
-    def resampling_row(self, input_vector, output_vector, add_vector, add_output_vector, max_sym_boundary, max_asym_boundary):
+    def resampling(self, input_vector, output_vector, add_vector, add_output_vector,
+                   max_sym_boundary, max_asym_boundary, index_min, index_max, spline_array):
         length_input = len(input_vector)
         length_output = len(output_vector)
         length_total = len(add_vector)
@@ -158,9 +206,8 @@ class Resize:
             average = do_integ(input_vector, self.analy_degree + 1)
 
         add_vector[:length_input] = input_vector
-
         l = np.arange(length_input, length_total)
-        
+
         if self.analy_even == 1:
             l2 = np.where(l >= max_sym_boundary, np.abs(l % max_sym_boundary), l)
             l2 = np.where(l2 >= length_input, max_sym_boundary - l2, l2)
@@ -172,13 +219,10 @@ class Resize:
 
         add_output_vector.fill(0.0)  # Initialize the add_output_vector with zeros
 
-        index_min_width = np.array(self.index_min_width)
-        index_max_width = np.array(self.index_max_width)
-        spline_array_width = np.array(self.spline_array_width)
-
+        # Use specified index and spline arrays (these differ for rows vs. columns)
         i = 0
         for l in range(length_output_total):
-            for k in range(index_min_width[l], index_max_width[l] + 1):
+            for k in range(index_min[l], index_max[l] + 1):
                 index = k
                 sign = 1
                 if k < 0:
@@ -189,7 +233,7 @@ class Resize:
                 if k >= length_total:
                     index = length_total - 1
                 # Geometric transformation and resampling
-                add_output_vector[l] += sign * add_vector[index] * spline_array_width[i]
+                add_output_vector[l] += sign * add_vector[index] * spline_array[i]
                 i += 1
 
         # Projection Method
@@ -204,63 +248,6 @@ class Resize:
 
         output_vector[:length_output] = add_output_vector[:length_output]
 
-    def resampling_column(self, input_vector, output_vector, add_vector, add_output_vector, max_sym_boundary, max_asym_boundary):
-        length_input = len(input_vector)
-        length_output = len(output_vector)
-        length_total = len(add_vector)
-        length_output_total = len(add_output_vector)
-        average = 0
-
-        # Projection Method
-        if self.analy_degree != -1:
-            average = do_integ(input_vector, self.analy_degree + 1)
-
-        add_vector[:length_input] = input_vector
-
-        l = np.arange(length_input, length_total)
-        
-        if self.analy_even == 1:
-            l2 = np.where(l >= max_sym_boundary, np.abs(l % max_sym_boundary), l)
-            l2 = np.where(l2 >= length_input, max_sym_boundary - l2, l2)
-            add_vector[length_input:length_total] = input_vector[l2]
-        else:
-            l2 = np.where(l >= max_asym_boundary, np.abs(l % max_asym_boundary), l)
-            l2 = np.where(l2 >= length_input, max_asym_boundary - l2, l2)
-            add_vector[length_input:length_total] = -input_vector[l2]
-
-        add_output_vector.fill(0.0)  # Initialize the add_output_vector with zeros
-        i = 0
-
-        index_min_height = np.array(self.index_min_height)
-        index_max_height = np.array(self.index_max_height)
-        spline_array_height = np.array(self.spline_array_height)
-
-        for l in range(length_output_total):
-            for k in range(index_min_height[l], index_max_height[l] + 1):
-                index = k
-                sign = 1
-                if k < 0:
-                    index = -k
-                    if self.analy_even == 0:
-                        index -= 1
-                        sign = -1
-                if k >= length_total:
-                    index = length_total - 1
-                # Geometric transformation and resampling
-                add_output_vector[l] += sign * add_vector[index] * spline_array_height[i]
-                i += 1
-
-        # Projection Method
-        if self.analy_degree != -1:
-            # Differentiation analy_degree + 1 times of the signal
-            do_diff(add_output_vector, self.analy_degree + 1)
-            add_output_vector[:length_output_total] += average
-            # IIR filtering
-            get_interpolation_coefficients(add_output_vector, self.corr_degree)
-            # Samples
-            get_samples(add_output_vector, self.synthe_degree)
-
-        output_vector[:length_output] = add_output_vector[:length_output]
 
 def resize_image(input_img_normalized, output_size=None, zoom_factors=None,
                  method='Least-Squares', interpolation='Linear', inversable=False):
