@@ -251,6 +251,27 @@ class Resize:
 
 def resize_image(input_img_normalized, output_size=None, zoom_factors=None,
                  method='Least-Squares', interpolation='Linear', inversable=False):
+    """
+    Resize an image using spline interpolation.
+
+    Parameters:
+    - input_img_normalized: np.ndarray
+        The input image to be resized.
+    - output_size: tuple of ints (new_height, new_width), optional
+        Desired output image size. If provided, zoom factors are computed from it.
+    - zoom_factors: tuple of floats (zoom_y, zoom_x), optional
+        Zoom factors for height and width. Used if output_size is not provided.
+    - method: str, optional
+        Interpolation method ('Interpolation', 'Least-Squares', 'Oblique projection').
+    - interpolation: str, optional
+        Type of interpolation ('Linear', 'Quadratic', 'Cubic').
+    - inversable: bool, optional
+        If True, adjust sizes to ensure invertibility. Output size may change slightly.
+
+    Returns:
+    - output_image: np.ndarray
+        The resized image.
+    """
     # Determine the zoom factors
     if output_size is not None:
         zoom_y = output_size[0] / input_img_normalized.shape[0]
@@ -291,6 +312,10 @@ def resize_image(input_img_normalized, output_size=None, zoom_factors=None,
         size = calculate_final_size(inversable, input_img_normalized.shape[0], input_img_normalized.shape[1], zoom_y, zoom_x)
         working_size_y, working_size_x = size[:2]
         output_height, output_width = size[2], size[3]
+
+        # Inform the user if the output size has changed
+        if output_size is not None and (output_height != output_size[0] or output_width != output_size[1]):
+            print(f"Note: Output size adjusted to ({output_height}, {output_width}) to ensure invertibility.")
     else:
         # Define the output image size as before
         output_height = int(np.round(input_img_normalized.shape[0] * zoom_y))
