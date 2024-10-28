@@ -63,7 +63,7 @@ def test_resize_pattern(pattern_name, width, height, zoom_factors=(0.5, 0.5), in
         raise ValueError("Unknown pattern name")
     
     # Resize pattern
-    resized_image = resize_image(pattern, zoom_factors=zoom_factors, interpolation=interpolation)
+    resized_image = resize_image(pattern, zoom_factors=zoom_factors, interpolation=interpolation, inversable=False)
     
     # Calculate MSE and PSNR with expected values
     mse = calculate_mse_with_expected(pattern_name, width, height, zoom_factors, resized_image)

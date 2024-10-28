@@ -260,8 +260,6 @@ def resize_image(input_img_normalized, output_size=None, zoom_factors=None,
     else:
         raise ValueError("Either output_size or zoom_factors must be provided.")
 
-    ##########################################
-
     # Set degrees based on interpolation method
     if interpolation == "Linear":
         interp_degree = 1
@@ -276,10 +274,7 @@ def resize_image(input_img_normalized, output_size=None, zoom_factors=None,
         synthe_degree = 3
         analy_degree = 3
 
-    # Interpolation method must fulfill requirement: analy_degree = -1
-    # Least-Squares method must fulfill requirement: analy_degree = interp_degree
-    # Oblique projection method must fulfill requirement: -1 < analy_degree < interp_degree
-
+    # Adjust degrees based on method
     if method == "Interpolation":
         analy_degree = -1
     elif method == "Oblique projection":
@@ -290,12 +285,21 @@ def resize_image(input_img_normalized, output_size=None, zoom_factors=None,
         else:  # Cubic
             analy_degree = 2
 
-    # Define the output image size
-    output_height = int(np.round(input_img_normalized.shape[0] * zoom_y))
-    output_width = int(np.round(input_img_normalized.shape[1] * zoom_x))
+    # Compute output image size based on inversable parameter
+    if inversable:
+        # Use calculate_final_size to get the correct output size
+        size = calculate_final_size(inversable, input_img_normalized.shape[0], input_img_normalized.shape[1], zoom_y, zoom_x)
+        working_size_y, working_size_x = size[:2]
+        output_height, output_width = size[2], size[3]
+    else:
+        # Define the output image size as before
+        output_height = int(np.round(input_img_normalized.shape[0] * zoom_y))
+        output_width = int(np.round(input_img_normalized.shape[1] * zoom_x))
+
+    # Create the output image with the correct size
     output_image = np.zeros((output_height, output_width), dtype=np.float64)
 
-    # Create instance of Resize class
+    # Create an instance of Resize class
     resizer = Resize()
 
     # Perform resizing with a copy of the input image

@@ -17,7 +17,7 @@ def main():
         input_img_normalized=input_image,
         output_size=(output_height, output_width),
         interpolation="Cubic",
-        inversable=False
+        inversable=True
     )
 
     # Plot original and resized images
