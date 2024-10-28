@@ -1,12 +1,10 @@
 # core.py
 import numpy as np
 from .utils import calculate_final_size
-from .interpolation import (
-    beta, get_interpolation_coefficients, get_samples, symmetric_fir,
-    get_initial_causal_coefficient, get_initial_anti_causal_coefficient,
-    do_integ, integ_sa, integ_as, do_diff, diff_sa, diff_as
+from .utils import (
+    beta, get_interpolation_coefficients, get_samples,
+    do_integ, do_diff, calculate_final_size, border
 )
-from .utils import calculate_final_size, border
 
 class Resize:
     def __init__(self):
@@ -26,7 +24,6 @@ class Resize:
         self.index_max_height = None
         self.index_min_width = None
         self.index_max_width = None
-        self.tolerance = 1e-9
 
     def compute_zoom(self, input_img, output_img, analy_degree, synthe_degree,
                     interp_degree, zoom_y, zoom_x, shift_y, shift_x, inversable):

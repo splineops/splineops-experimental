@@ -138,7 +138,7 @@ def main():
 
     # Define method and interpolation type
     method = "Least-Squares"
-    interpolation_type = "Linear"
+    interpolation_type = "Cubic"
 
     # Measure time and process images with least squares method
     start_time = time.time()
