@@ -135,6 +135,7 @@ def main():
 
     # Define the zoom factor
     zoom_factor = 1/3.14
+    #zoom_factor = 0.5
 
     # Define method and interpolation type
     method = "Least-Squares"
