@@ -75,8 +75,7 @@ class Resize:
         working_size_x, working_size_y = size[1], size[0]
         final_size_x, final_size_y = size[3], size[2]
 
-        if ((analy_degree + 1) / 2) * 2 == analy_degree + 1:
-            self.analy_even = 1
+        self.analy_even = int((analy_degree + 1) % 2 == 0)
 
         total_degree = interp_degree + analy_degree + 1
         self.corr_degree = analy_degree + synthe_degree + 1
