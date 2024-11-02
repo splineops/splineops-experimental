@@ -94,7 +94,7 @@ class Resize:
         self.spline_array_height = np.zeros(length_array_spln_height)
 
         shift_y += ((analy_degree + 1.0) / 2.0 - np.floor((analy_degree + 1.0) / 2.0)) * (1.0 / zoom_y - 1.0)
-        fact_height = np.power(zoom_y, analy_degree + 1)
+        fact_height = np.float64(np.power(zoom_y, analy_degree + 1))
 
         i = 0
         for l in range(final_total_height):
@@ -424,11 +424,11 @@ class Resize:
         """
         size = len(c)
         m = 0.0
-        average = 0.0
+        average = np.float64(0.0)
 
         if nb == 1:
             for f in range(size):
-                average += c[f]
+                average += np.float64(c[f])
             average = (2.0 * average - c[size - 1] - c[0]) / (2 * size - 2)
             self.integ_sa(c, average)
 
@@ -537,7 +537,7 @@ class Resize:
         size = len(c)
         old = c[size - 2]
         for i in range(size - 1):
-            c[i] = c[i] - c[i + 1]
+            c[i] = np.float64(c[i] - c[i + 1])
         c[size - 1] = c[size - 1] - old
 
     def diff_as(self, c):
@@ -591,7 +591,7 @@ class Resize:
         else:
             raise ValueError("Invalid degree (should be [0..7])")
 
-        horizon = 2 + int(np.log(tolerance) / np.log(abs(z)))
+        horizon = np.int64(2 + int(np.log(tolerance) / np.log(abs(z))))
         horizon = min(horizon, size)
         return horizon
 
@@ -687,12 +687,12 @@ class Resize:
             c[n] *= lambda_
 
         for zk in z:
-            c[0] = self.get_initial_causal_coefficient(c, zk, tolerance)
+            c[0] = np.float64(self.get_initial_causal_coefficient(c, zk, tolerance))
             for n in range(1, len(c)):
-                c[n] += zk * c[n - 1]
+                c[n] = np.float64(c[n] + zk * c[n - 1])
             c[-1] = self.get_initial_anti_causal_coefficient(c, zk, tolerance)
             for n in range(len(c) - 2, -1, -1):
-                c[n] = zk * (c[n + 1] - c[n])
+                c[n] = np.float64(zk * (c[n + 1] - c[n]))
 
     def get_samples(self, c, degree):
         """

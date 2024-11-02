@@ -95,6 +95,9 @@ def resize_image_with_least_squares(zoom_y, zoom_x):
     downscaled_diff = downscaled_img - downscaled_java
     reverted_diff = reverted_img - reverted_java
 
+    print(downscaled_diff)
+    print(reverted_diff)
+
     # Plotting
     fig, axs = plt.subplots(3, 3, figsize=(15, 12))
     
