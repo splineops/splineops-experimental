@@ -212,13 +212,20 @@ class Resize:
         add_vector[:length_input] = input_vector
 
         for l in range(length_input, length_total):
-            l2 = 2 * length_input - l - 2
-            if l2 < 0:
-                l2 = -l2
             if self.analy_even == 1:
-                add_vector[l] = add_vector[l2]
+                l2 = l
+                if l >= max_sym_boundary:
+                    l2 = int(abs(l % max_sym_boundary))
+                if l2 >= length_input:
+                    l2 = max_sym_boundary - l2
+                add_vector[l] = input_vector[l2]
             else:
-                add_vector[l] = -add_vector[l2]
+                l2 = l
+                if l >= max_asym_boundary:
+                    l2 = int(abs(l % max_asym_boundary))
+                if l2 >= length_input:
+                    l2 = max_asym_boundary - l2
+                add_vector[l] = -input_vector[l2]
 
         i = 0
 
@@ -233,12 +240,7 @@ class Resize:
                         index -= 1
                         sign = -1
                 if k >= length_total:
-                    index = 2 * length_total - k - 2
-                    if index >= length_total:
-                        index %= length_total
-                    if self.analy_even == 0:
-                        sign = -sign
-
+                    index = length_total - 1
                 # Geometric transformation and resampling
                 add_output_vector[l] += sign * add_vector[index] * self.spline_array_width[i]
                 i += 1
@@ -288,13 +290,20 @@ class Resize:
         add_vector[:length_input] = input_vector
 
         for l in range(length_input, length_total):
-            l2 = 2 * length_input - l - 2
-            if l2 < 0:
-                l2 = -l2
             if self.analy_even == 1:
-                add_vector[l] = add_vector[l2]
+                l2 = l
+                if l >= max_sym_boundary:
+                    l2 = int(abs(l % max_sym_boundary))
+                if l2 >= length_input:
+                    l2 = max_sym_boundary - l2
+                add_vector[l] = input_vector[l2]
             else:
-                add_vector[l] = -add_vector[l2]
+                l2 = l
+                if l >= max_asym_boundary:
+                    l2 = int(abs(l % max_asym_boundary))
+                if l2 >= length_input:
+                    l2 = max_asym_boundary - l2
+                add_vector[l] = -input_vector[l2]
 
         i = 0
 
@@ -309,12 +318,7 @@ class Resize:
                         index -= 1
                         sign = -1
                 if k >= length_total:
-                    index = 2 * length_total - k - 2
-                    if index >= length_total:
-                        index %= length_total
-                    if self.analy_even == 0:
-                        sign = -sign
-
+                    index = length_total - 1
                 # Geometric transformation and resampling
                 add_output_vector[l] += sign * add_vector[index] * self.spline_array_height[i]
                 i += 1

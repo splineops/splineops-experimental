@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.ndimage import zoom as scipy_zoom
 from Resize_No_Vectorization import Resize  # Assuming Resize class from external module
 
 # Hardcoded Java-generated downscaled and reverted images for comparison
@@ -49,7 +50,7 @@ def resize_image_with_least_squares(zoom_y, zoom_x):
     shift_x = 0.0
     inversable = False  # Non-inversible for this example
 
-    # Step 1: Downscale to 5x5
+    # Step 1: Downscale to 5x5 using custom Resize class
     resizer.compute_zoom(
         input_img=input_img_normalized, 
         output_img=downscaled_img, 
@@ -63,7 +64,10 @@ def resize_image_with_least_squares(zoom_y, zoom_x):
         inversable=inversable
     )
 
-    # Step 2: Resize back to 10x10
+    # Downscale with scipy.ndimage.zoom for comparison
+    downscaled_scipy = scipy_zoom(input_img_normalized, (zoom_y, zoom_x), order=3)
+
+    # Step 2: Resize back to 10x10 using custom Resize class
     reverted_shape = (10, 10)
     reverted_img = np.zeros(reverted_shape, dtype=np.float64)
     reverse_zoom_y = 1.0 / zoom_y
@@ -84,37 +88,46 @@ def resize_image_with_least_squares(zoom_y, zoom_x):
         inversable=inversable
     )
 
-    # Compute differences between Java and Python results
-    downscaled_diff = downscaled_img_copy - downscaled_java
+    # Revert using scipy.ndimage.zoom for comparison
+    reverted_scipy = scipy_zoom(downscaled_scipy, (reverse_zoom_y, reverse_zoom_x), order=3)
+
+    # Compute differences
+    downscaled_diff = downscaled_img - downscaled_java
     reverted_diff = reverted_img - reverted_java
 
-    # Print differences
-    print("Difference in Downscaled Images (Python - Java):")
-    print(downscaled_diff)
-    
-    print("\nDifference in Reverted Images (Python - Java):")
-    print(reverted_diff)
-
     # Plotting
-    fig, axs = plt.subplots(3, 2, figsize=(10, 12))
+    fig, axs = plt.subplots(3, 3, figsize=(15, 12))
+    
+    # Original input
     axs[0, 0].imshow(input_img_normalized_copy, cmap='gray')
     axs[0, 0].set_title("Initial Square Image (Python)")
 
     axs[0, 1].imshow(input_img_normalized_copy, cmap='gray')
     axs[0, 1].set_title("Initial Square Image (Java)")
 
+    axs[0, 2].imshow(input_img_normalized_copy, cmap='gray')
+    axs[0, 2].set_title("Initial Square Image (SciPy)")
+
+    # Downscaled
     axs[1, 0].imshow(downscaled_img_copy, cmap='gray')
     axs[1, 0].set_title("Downscaled Image (Python)")
     
     axs[1, 1].imshow(downscaled_java, cmap='gray')
     axs[1, 1].set_title("Downscaled Image (Java)")
 
+    axs[1, 2].imshow(downscaled_scipy, cmap='gray')
+    axs[1, 2].set_title("Downscaled Image (SciPy)")
+
+    # Reverted
     axs[2, 0].imshow(reverted_img, cmap='gray')
     axs[2, 0].set_title("Reverted Image (Python)")
     
     axs[2, 1].imshow(reverted_java, cmap='gray')
     axs[2, 1].set_title("Reverted Image (Java)")
-    
+
+    axs[2, 2].imshow(reverted_scipy, cmap='gray')
+    axs[2, 2].set_title("Reverted Image (SciPy)")
+
     for ax in axs.flat:
         ax.axis('off')
     
