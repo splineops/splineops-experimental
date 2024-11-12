@@ -94,7 +94,7 @@ class Resize:
         self.spline_array_height = np.zeros(length_array_spln_height)
 
         shift_y += ((analy_degree + 1.0) / 2.0 - np.floor((analy_degree + 1.0) / 2.0)) * (1.0 / zoom_y - 1.0)
-        fact_height = np.float64(np.power(zoom_y, analy_degree + 1))
+        fact_height = np.power(zoom_y, analy_degree + 1)
 
         i = 0
         for l in range(final_total_height):
@@ -212,13 +212,20 @@ class Resize:
         add_vector[:length_input] = input_vector
 
         for l in range(length_input, length_total):
-            l2 = 2 * length_input - l - 2
-            if l2 < 0:
-                l2 = -l2
             if self.analy_even == 1:
-                add_vector[l] = add_vector[l2]
+                l2 = l
+                if l >= max_sym_boundary:
+                    l2 = int(abs(l % max_sym_boundary))
+                if l2 >= length_input:
+                    l2 = max_sym_boundary - l2
+                add_vector[l] = input_vector[l2]
             else:
-                add_vector[l] = -add_vector[l2]
+                l2 = l
+                if l >= max_asym_boundary:
+                    l2 = int(abs(l % max_asym_boundary))
+                if l2 >= length_input:
+                    l2 = max_asym_boundary - l2
+                add_vector[l] = -input_vector[l2]
 
         i = 0
 
@@ -233,12 +240,7 @@ class Resize:
                         index -= 1
                         sign = -1
                 if k >= length_total:
-                    index = 2 * length_total - k - 2
-                    if index >= length_total:
-                        index %= length_total
-                    if self.analy_even == 0:
-                        sign = -sign
-
+                    index = length_total - 1
                 # Geometric transformation and resampling
                 add_output_vector[l] += sign * add_vector[index] * self.spline_array_width[i]
                 i += 1
@@ -288,13 +290,20 @@ class Resize:
         add_vector[:length_input] = input_vector
 
         for l in range(length_input, length_total):
-            l2 = 2 * length_input - l - 2
-            if l2 < 0:
-                l2 = -l2
             if self.analy_even == 1:
-                add_vector[l] = add_vector[l2]
+                l2 = l
+                if l >= max_sym_boundary:
+                    l2 = int(abs(l % max_sym_boundary))
+                if l2 >= length_input:
+                    l2 = max_sym_boundary - l2
+                add_vector[l] = input_vector[l2]
             else:
-                add_vector[l] = -add_vector[l2]
+                l2 = l
+                if l >= max_asym_boundary:
+                    l2 = int(abs(l % max_asym_boundary))
+                if l2 >= length_input:
+                    l2 = max_asym_boundary - l2
+                add_vector[l] = -input_vector[l2]
 
         i = 0
 
@@ -309,12 +318,7 @@ class Resize:
                         index -= 1
                         sign = -1
                 if k >= length_total:
-                    index = 2 * length_total - k - 2
-                    if index >= length_total:
-                        index %= length_total
-                    if self.analy_even == 0:
-                        sign = -sign
-
+                    index = length_total - 1
                 # Geometric transformation and resampling
                 add_output_vector[l] += sign * add_vector[index] * self.spline_array_height[i]
                 i += 1
@@ -424,11 +428,11 @@ class Resize:
         """
         size = len(c)
         m = 0.0
-        average = np.float64(0.0)
+        average = 0.0
 
         if nb == 1:
             for f in range(size):
-                average += np.float64(c[f])
+                average += c[f]
             average = (2.0 * average - c[size - 1] - c[0]) / (2 * size - 2)
             self.integ_sa(c, average)
 
@@ -537,7 +541,7 @@ class Resize:
         size = len(c)
         old = c[size - 2]
         for i in range(size - 1):
-            c[i] = np.float64(c[i] - c[i + 1])
+            c[i] = c[i] - c[i + 1]
         c[size - 1] = c[size - 1] - old
 
     def diff_as(self, c):
@@ -591,7 +595,7 @@ class Resize:
         else:
             raise ValueError("Invalid degree (should be [0..7])")
 
-        horizon = np.int64(2 + int(np.log(tolerance) / np.log(abs(z))))
+        horizon = 2 + int(np.log(tolerance) / np.log(abs(z)))
         horizon = min(horizon, size)
         return horizon
 
@@ -687,12 +691,12 @@ class Resize:
             c[n] *= lambda_
 
         for zk in z:
-            c[0] = np.float64(self.get_initial_causal_coefficient(c, zk, tolerance))
+            c[0] = self.get_initial_causal_coefficient(c, zk, tolerance)
             for n in range(1, len(c)):
-                c[n] = np.float64(c[n] + zk * c[n - 1])
+                c[n] += zk * c[n - 1]
             c[-1] = self.get_initial_anti_causal_coefficient(c, zk, tolerance)
             for n in range(len(c) - 2, -1, -1):
-                c[n] = np.float64(zk * (c[n + 1] - c[n]))
+                c[n] = zk * (c[n + 1] - c[n])
 
     def get_samples(self, c, degree):
         """
