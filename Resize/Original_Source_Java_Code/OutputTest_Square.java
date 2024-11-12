@@ -1,7 +1,7 @@
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class OutputTest02 {
+public class OutputTest_Square {
     public static void main(String[] args) {
         // Create a 10x10 black image with a 5x5 white square in the middle
         ImageAccess inputImage = new ImageAccess(10, 10);
@@ -20,7 +20,7 @@ public class OutputTest02 {
         }
 
         // Resize parameters
-        int analyDegree = 0;
+        int analyDegree = 1;
         int syntheDegree = 3;
         int interpolationDegree = 3;
         double zoomFactorX = 0.5;
