@@ -21,8 +21,8 @@ public class OutputTest02 {
 
         // Resize parameters
         int analyDegree = 0;
-        int syntheDegree = 1;
-        int interpolationDegree = 1;
+        int syntheDegree = 3;
+        int interpolationDegree = 3;
         double zoomFactorX = 0.5;
         double zoomFactorY = 0.5;
         double shiftY = 0.0;

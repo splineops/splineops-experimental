@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.ndimage import zoom as scipy_zoom
 from Resize_No_Vectorization import Resize  # Assuming Resize class from external module
 
@@ -67,8 +66,32 @@ reverted_0_5_java_square_Oblique_0_1_1 = np.array([
     [-0.017213881868000706, 0.017213881604552506, 0.05164164464060429, 0.232744262464161, 0.4138468802746841, 0.35252771023795654, 0.2912085401945637, 0.12477950932864847, -0.04164952175080101, 0.12477951020864177]
 ])
 
+downscaled_0_5_java_square_Oblique_0_3_3 = np.array([
+    [5.291672427198959E-4,0.003569120886831553,0.02512550602635391,0.018689877928186313,-0.0016637256069983036],
+    [0.003569120886831554,0.024072963850410044,0.16946621240185117,0.12605926501223633,-0.011221476566411929],
+    [0.025125506026353984,0.16946621240185109,1.1929896677570981,0.8874181971332533,-0.07899572080458923],
+    [0.01868987792818634,0.1260592650122362,0.8874181971332537,0.6601155717331633,-0.0587618166630457],
+    [-0.0016637256069983036,-0.011221476566411988,-0.07899572080458944,-0.05876181666304567,0.0052308281237413]
+])
 
-def resize_image_with_least_squares(zoom_y, zoom_x):
+reverted_0_5_java_square_Oblique_0_3_3 = np.array([
+    [5.291672497343016E-4,1.629421441559165E-4,0.0035691208884048925,0.01455469623303111,0.025125506026769183,0.02651770721937275,0.01868987678019869,0.005581884423551634,-0.001663735358993117,0.005581907861544083],
+    [1.6294214415592652E-4,5.0173442055320445E-5,0.0010990102100996548,0.004481708595796132,0.007736691616988114,0.008165380746054822,0.005755020927890797,0.0017187840269038816,-5.123004245603956E-4,0.0017187912439733163],
+    [0.0035691208884049137,0.0010990102100996622,0.0240729635525335,0.09816833973716851,0.16946621023298875,0.17885631205784364,0.12605925565388898,0.037648626786263475,-0.011221542197748903,0.037648784870552544],
+    [0.014554696233031048,0.004481708595796391,0.09816833973716807,0.4003255729491533,0.691074718067752,0.7293670830313475,0.5140633312155322,0.15352921450349574,-0.04576088708145977,0.15352985916330944],
+    [0.025125506026769013,0.007736691616988376,0.1694662102329883,0.6910747180677528,1.192989651982794,1.2590930615811753,0.8874181308768543,0.265034676267466,-0.0789961827953639,0.2650357891319171],
+    [0.026517707219372612,0.008165380746054877,0.17885631205784322,0.7293670830313478,1.2590930615811748,1.3288592529591532,0.9365898601478369,0.27972021501791866,-0.08337335154896665,0.27972138954605186],
+    [0.018689876780198802,0.005755020927890682,0.1260592556538887,0.5140633312155323,0.8874181308768545,0.936589860147837,0.6601154818904725,0.19714888275847225,-0.05876215670953631,0.19714971057461422],
+    [0.0055818844235516534,0.0017187840269037831,0.037648626786263364,0.1535292145034955,0.2650346762674659,0.27972021501791833,0.19714888275847225,0.05888012482543603,-0.017549798272547622,0.05888037205949127],
+    [-0.0016637353589931245,-5.123004245604029E-4,-0.011221542197748988,-0.04576088708146003,-0.07899618279536419,-0.08337335154896691,-0.05876215670953616,-0.017549798272547608,0.005230889376003203,-0.017549871963080835],
+    [0.005581907861544116,0.0017187912439731471,0.037648784870552496,0.1535298591633091,0.26503578913191705,0.2797213895460511,0.19714971057461417,0.05888037205949116,-0.01754987196308086,0.05888061929458464]
+])
+
+def mse(matrix1, matrix2):
+    """Compute Mean Squared Error between two matrices."""
+    return np.mean((matrix1 - matrix2) ** 2)
+
+def resize_and_compare(java_downscaled, java_reverted, analy_degree, synthe_degree, interp_degree):
     # Create a 10x10 square image
     input_img = np.zeros((10, 10))
     input_img[3:7, 3:7] = 255.0  # White square in the center
@@ -76,24 +99,16 @@ def resize_image_with_least_squares(zoom_y, zoom_x):
     # Normalize the input image to the range [0, 1]
     input_img_normalized = input_img / 255.0
 
-    input_img_normalized_copy = input_img_normalized.copy()
-
     # Define output shape for downscaled image based on zoom factors
+    zoom_y = 0.5
+    zoom_x = 0.5
     output_shape = (int(round(input_img.shape[0] * zoom_y)), int(round(input_img.shape[1] * zoom_x)))
     downscaled_img = np.zeros(output_shape, dtype=np.float64)
 
     # Initialize Resize instance
     resizer = Resize()
     
-    # Set parameters for least-squares cubic interpolation
-    interp_degree = 3  # Cubic interpolation
-    synthe_degree = 3
-    analy_degree = 3
-    shift_y = 0.0  # No shift
-    shift_x = 0.0
-    inversable = False  # Non-inversible for this example
-
-    # Step 1: Downscale to 5x5 using custom Resize class
+    # Downscale with specified degrees
     resizer.compute_zoom(
         input_img=input_img_normalized, 
         output_img=downscaled_img, 
@@ -102,21 +117,16 @@ def resize_image_with_least_squares(zoom_y, zoom_x):
         interp_degree=interp_degree, 
         zoom_y=zoom_y, 
         zoom_x=zoom_x, 
-        shift_y=shift_y, 
-        shift_x=shift_x, 
-        inversable=inversable
+        shift_y=0.0, 
+        shift_x=0.0, 
+        inversable=False
     )
-
-    # Downscale with scipy.ndimage.zoom for comparison
-    downscaled_scipy = scipy_zoom(input_img_normalized, (zoom_y, zoom_x), order=3)
 
     # Step 2: Resize back to 10x10 using custom Resize class
     reverted_shape = (10, 10)
     reverted_img = np.zeros(reverted_shape, dtype=np.float64)
     reverse_zoom_y = 1.0 / zoom_y
     reverse_zoom_x = 1.0 / zoom_x
-
-    downscaled_img_copy = downscaled_img.copy()
 
     resizer.compute_zoom(
         input_img=downscaled_img, 
@@ -126,62 +136,26 @@ def resize_image_with_least_squares(zoom_y, zoom_x):
         interp_degree=interp_degree, 
         zoom_y=reverse_zoom_y, 
         zoom_x=reverse_zoom_x, 
-        shift_y=shift_y, 
-        shift_x=shift_x, 
-        inversable=inversable
+        shift_y=0.0, 
+        shift_x=0.0, 
+        inversable=False
     )
 
-    # Revert using scipy.ndimage.zoom for comparison
-    reverted_scipy = scipy_zoom(downscaled_scipy, (reverse_zoom_y, reverse_zoom_x), order=3)
+    # Compute differences and MSE
+    downscaled_diff = downscaled_img - java_downscaled
+    reverted_diff = reverted_img - java_reverted
+    downscaled_mse = mse(downscaled_img, java_downscaled)
+    reverted_mse = mse(reverted_img, java_reverted)
 
-    # Compute differences
-    downscaled_diff = downscaled_img - downscaled_0_5_java_square_LS_3_3_3
-    reverted_diff = reverted_img - reverted_0_5_java_square_LS_3_3_3
+    print(f"Degrees (Analy: {analy_degree}, Synthe: {synthe_degree}, Interp: {interp_degree})")
+    print("\nDownscaled Difference:\n", downscaled_diff)
+    print(f"\nDownscaled MSE: {downscaled_mse}\n")
+    print("Reverted Difference:\n", reverted_diff)
+    print(f"\nReverted MSE: {reverted_mse}")
+    print("\n" + "="*80 + "\n")
 
-    print(downscaled_diff)
-    print(reverted_diff)
-
-    # Plotting
-    fig, axs = plt.subplots(3, 3, figsize=(15, 12))
-    
-    # Original input
-    axs[0, 0].imshow(input_img_normalized_copy, cmap='gray')
-    axs[0, 0].set_title("Initial Square Image (Python)")
-
-    axs[0, 1].imshow(input_img_normalized_copy, cmap='gray')
-    axs[0, 1].set_title("Initial Square Image (Java)")
-
-    axs[0, 2].imshow(input_img_normalized_copy, cmap='gray')
-    axs[0, 2].set_title("Initial Square Image (SciPy)")
-
-    # Downscaled
-    axs[1, 0].imshow(downscaled_img_copy, cmap='gray')
-    axs[1, 0].set_title("Downscaled Image (Python)")
-    
-    axs[1, 1].imshow(downscaled_0_5_java_square_LS_3_3_3, cmap='gray')
-    axs[1, 1].set_title("Downscaled Image (Java)")
-
-    axs[1, 2].imshow(downscaled_scipy, cmap='gray')
-    axs[1, 2].set_title("Downscaled Image (SciPy)")
-
-    # Reverted
-    axs[2, 0].imshow(reverted_img, cmap='gray')
-    axs[2, 0].set_title("Reverted Image (Python)")
-    
-    axs[2, 1].imshow(reverted_0_5_java_square_LS_3_3_3, cmap='gray')
-    axs[2, 1].set_title("Reverted Image (Java)")
-
-    axs[2, 2].imshow(reverted_scipy, cmap='gray')
-    axs[2, 2].set_title("Reverted Image (SciPy)")
-
-    for ax in axs.flat:
-        ax.axis('off')
-    
-    plt.tight_layout()
-    plt.show()
-
-# Example usage with 10x10 square image:
-resize_image_with_least_squares(
-    zoom_y=0.5,  # Vertical zoom factor
-    zoom_x=0.5   # Horizontal zoom factor
-)
+# Compare each Java image with appropriate degree settings
+resize_and_compare(downscaled_0_5_java_square_LS_3_3_3, reverted_0_5_java_square_LS_3_3_3, analy_degree=3, synthe_degree=3, interp_degree=3)
+resize_and_compare(downscaled_0_5_java_square_LS_1_1_1, reverted_0_5_java_square_LS_1_1_1, analy_degree=1, synthe_degree=1, interp_degree=1)
+resize_and_compare(downscaled_0_5_java_square_Oblique_0_1_1, reverted_0_5_java_square_Oblique_0_1_1, analy_degree=0, synthe_degree=1, interp_degree=1)
+resize_and_compare(downscaled_0_5_java_square_Oblique_0_3_3, reverted_0_5_java_square_Oblique_0_3_3, analy_degree=0, synthe_degree=3, interp_degree=3)
